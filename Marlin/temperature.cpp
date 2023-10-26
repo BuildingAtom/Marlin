@@ -38,6 +38,11 @@
   #include "MarlinSPI.h"
 #endif
 
+#if ENABLED(TEMP_ADS1118)
+  #include "thermocouple_ads1118.h"
+  Ads1118 ads1118;
+#endif
+
 #if ENABLED(BABYSTEPPING)
   #include "stepper.h"
 #endif
@@ -932,6 +937,8 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
     case 0:
       #if ENABLED(HEATER_0_USES_MAX6675)
         return raw * 0.25;
+      #elif ENABLED(HEATER_0_USES_ADS1118)
+        return ads1118.channel_temp(HEATER_0_CHANNEL);
       #elif ENABLED(HEATER_0_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_0_USES_AD8495)
@@ -940,7 +947,9 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
         break;
       #endif
     case 1:
-      #if ENABLED(HEATER_1_USES_AD595)
+      #if ENABLED(HEATER_1_USES_ADS1118)
+        return ads1118.channel_temp(HEATER_1_CHANNEL);
+      #elif ENABLED(HEATER_1_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_1_USES_AD8495)
         return TEMP_AD8495(raw);
@@ -948,7 +957,9 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
         break;
       #endif
     case 2:
-      #if ENABLED(HEATER_2_USES_AD595)
+      #if ENABLED(HEATER_2_USES_ADS1118)
+        return ads1118.channel_temp(HEATER_2_CHANNEL);
+      #elif ENABLED(HEATER_2_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_2_USES_AD8495)
         return TEMP_AD8495(raw);
@@ -956,7 +967,9 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
         break;
       #endif
     case 3:
-      #if ENABLED(HEATER_3_USES_AD595)
+      #if ENABLED(HEATER_3_USES_ADS1118)
+        return ads1118.channel_temp(HEATER_3_CHANNEL);
+      #elif ENABLED(HEATER_3_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_3_USES_AD8495)
         return TEMP_AD8495(raw);
@@ -964,7 +977,9 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
         break;
       #endif
     case 4:
-      #if ENABLED(HEATER_4_USES_AD595)
+      #if ENABLED(HEATER_4_USES_ADS1118)
+        return ads1118.channel_temp(HEATER_4_CHANNEL);
+      #elif ENABLED(HEATER_4_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_4_USES_AD8495)
         return TEMP_AD8495(raw);
@@ -989,6 +1004,8 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
   float Temperature::analog_to_celsius_bed(const int raw) {
     #if ENABLED(HEATER_BED_USES_THERMISTOR)
       SCAN_THERMISTOR_TABLE(BEDTEMPTABLE, BEDTEMPTABLE_LEN);
+    #elif ENABLED(HEATER_BED_USES_ADS1118)
+      return ads1118.channel_temp(HEATER_BED_CHANNEL);
     #elif ENABLED(HEATER_BED_USES_AD595)
       return TEMP_AD595(raw);
     #elif ENABLED(HEATER_BED_USES_AD8495)
@@ -1005,6 +1022,8 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
   float Temperature::analog_to_celsius_chamber(const int raw) {
     #if ENABLED(HEATER_CHAMBER_USES_THERMISTOR)
       SCAN_THERMISTOR_TABLE(CHAMBERTEMPTABLE, CHAMBERTEMPTABLE_LEN);
+    #elif ENABLED(HEATER_CHAMBER_USES_ADS1118)
+      return ads1118.channel_temp(HEATER_CHAMBER_CHANNEL);
     #elif ENABLED(HEATER_CHAMBER_USES_AD595)
       return TEMP_AD595(raw);
     #elif ENABLED(HEATER_CHAMBER_USES_AD8495)
@@ -1155,27 +1174,31 @@ void Temperature::init() {
 
   #endif // HEATER_0_USES_MAX6675
 
+  #if ENABLED(TEMP_ADS1118)
+    ads1118.init();
+  #endif
+
   HAL_adc_init();
 
-  #if HAS_TEMP_ADC_0
+  #if HAS_TEMP_ADC_0 && DISABLED(HEATER_0_USES_ADS1118)
     HAL_ANALOG_SELECT(TEMP_0_PIN);
   #endif
-  #if HAS_TEMP_ADC_1
+  #if HAS_TEMP_ADC_1 && DISABLED(HEATER_1_USES_ADS1118)
     HAL_ANALOG_SELECT(TEMP_1_PIN);
   #endif
-  #if HAS_TEMP_ADC_2
+  #if HAS_TEMP_ADC_2 && DISABLED(HEATER_2_USES_ADS1118)
     HAL_ANALOG_SELECT(TEMP_2_PIN);
   #endif
-  #if HAS_TEMP_ADC_3
+  #if HAS_TEMP_ADC_3 && DISABLED(HEATER_3_USES_ADS1118)
     HAL_ANALOG_SELECT(TEMP_3_PIN);
   #endif
-  #if HAS_TEMP_ADC_4
+  #if HAS_TEMP_ADC_4 && DISABLED(HEATER_4_USES_ADS1118)
     HAL_ANALOG_SELECT(TEMP_4_PIN);
   #endif
-  #if HAS_HEATED_BED
+  #if HAS_HEATED_BED && DISABLED(HEATER_BED_USES_ADS1118)
     HAL_ANALOG_SELECT(TEMP_BED_PIN);
   #endif
-  #if HAS_TEMP_CHAMBER
+  #if HAS_TEMP_CHAMBER && DISABLED(HEATER_CHAMBER_USES_ADS1118)
     HAL_ANALOG_SELECT(TEMP_CHAMBER_PIN);
   #endif
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
@@ -1633,31 +1656,59 @@ void Temperature::disable_all_heaters() {
  * Get raw temperatures
  */
 void Temperature::set_current_temp_raw() {
-  #if HAS_TEMP_ADC_0 && DISABLED(HEATER_0_USES_MAX6675)
+  #if HAS_TEMP_ADC_0 && DISABLED(HEATER_0_USES_MAX6675) && DISABLED(HEATER_0_USES_ADS1118)
     current_temperature_raw[0] = raw_temp_value[0];
   #endif
-  #if HAS_TEMP_ADC_1
+  #if HAS_TEMP_ADC_1 && DISABLED(HEATER_1_USES_ADS1118)
     #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
       redundant_temperature_raw = raw_temp_value[1];
     #else
       current_temperature_raw[1] = raw_temp_value[1];
     #endif
-    #if HAS_TEMP_ADC_2
+    #if HAS_TEMP_ADC_2 && DISABLED(HEATER_2_USES_ADS1118)
       current_temperature_raw[2] = raw_temp_value[2];
-      #if HAS_TEMP_ADC_3
+      #if HAS_TEMP_ADC_3 && DISABLED(HEATER_3_USES_ADS1118)
         current_temperature_raw[3] = raw_temp_value[3];
-        #if HAS_TEMP_ADC_4
+        #if HAS_TEMP_ADC_4 && DISABLED(HEATER_4_USES_ADS1118)
           current_temperature_raw[4] = raw_temp_value[4];
         #endif
       #endif
     #endif
   #endif
 
+  #if ENABLED(HEATER_0_USES_ADS1118)
+    current_temperature_raw[0] = ads1118.channel_raw(HEATER_0_CHANNEL);
+  #endif
+  #if ENABLED(HEATER_1_USES_ADS1118)
+    #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
+      redundant_temperature_raw = ads1118.channel_raw(HEATER_1_CHANNEL);
+    #else
+      current_temperature_raw[1] = ads1118.channel_raw(HEATER_1_CHANNEL);
+    #endif
+  #endif
+  #if ENABLED(HEATER_2_USES_ADS1118)
+    current_temperature_raw[2] = ads1118.channel_raw(HEATER_2_CHANNEL);
+  #endif
+  #if ENABLED(HEATER_3_USES_ADS1118)
+    current_temperature_raw[3] = ads1118.channel_raw(HEATER_3_CHANNEL);
+  #endif
+  #if ENABLED(HEATER_4_USES_ADS1118)
+    current_temperature_raw[4] = ads1118.channel_raw(HEATER_4_CHANNEL);
+  #endif
+
   #if HAS_HEATED_BED
-    current_temperature_bed_raw = raw_temp_bed_value;
+    #if ENABLED(HEATER_BED_USES_ADS1118)
+      current_temperature_bed_raw = ads1118.channel_raw(HEATER_BED_CHANNEL);
+    #else
+      current_temperature_bed_raw = raw_temp_bed_value;
+    #endif
   #endif
   #if HAS_TEMP_CHAMBER
-    current_temperature_chamber_raw = raw_temp_chamber_value;
+    #if ENABLED(HEATER_CHAMBER_USES_ADS1118)
+      current_temperature_chamber_raw = ads1118.channel_raw(HEATER_CHAMBER_CHANNEL);
+    #else
+      current_temperature_chamber_raw = raw_temp_chamber_value;
+    #endif
   #endif
   temp_meas_ready = true;
 }
@@ -1846,6 +1897,8 @@ HAL_TEMP_TIMER_ISR {
 
   HAL_timer_isr_epilogue(TEMP_TIMER_NUM);
 }
+
+uint8_t ads1118_success_flag = 0;
 
 void Temperature::isr() {
 
@@ -2164,13 +2217,20 @@ void Temperature::isr() {
     }
 
     case StartSampling:                                   // Start of sampling loops. Do updates/checks.
-      if (++temp_count >= OVERSAMPLENR) {                 // 10 * 16 * 1/(16000000/64/256)  = 164ms.
+      if (++temp_count >= OVERSAMPLENR && ads1118_success_flag >= 3) {                 // 10 * 16 * 1/(16000000/64/256)  = 164ms.
         temp_count = 0;
         readings_ready();
+        ads1118_success_flag = 0;
       }
+      // If we have the ADS1118, update every MIN_ADC_ISR_LOOPS (10), which will request at 97.6Hz
+      // This is a bit too fast for the selected sample rate (64Hz), but that's okay.
+      // We'll only take the last measurement during the readings_ready stage.
+      #if ENABLED(TEMP_ADS1118)
+        ads1118_success_flag += !ads1118.update();
+      #endif
       break;
 
-    #if HAS_TEMP_ADC_0
+    #if HAS_TEMP_ADC_0 && DISABLED(HEATER_0_USES_ADS1118)
       case PrepareTemp_0:
         HAL_START_ADC(TEMP_0_PIN);
         break;
@@ -2179,7 +2239,7 @@ void Temperature::isr() {
         break;
     #endif
 
-    #if HAS_HEATED_BED
+    #if HAS_HEATED_BED && DISABLED(HEATER_BED_USES_ADS1118)
       case PrepareTemp_BED:
         HAL_START_ADC(TEMP_BED_PIN);
         break;
@@ -2188,7 +2248,7 @@ void Temperature::isr() {
         break;
     #endif
 
-    #if HAS_TEMP_CHAMBER
+    #if HAS_TEMP_CHAMBER && DISABLED(HEATER_CHAMBER_USES_ADS1118)
       case PrepareTemp_CHAMBER:
         HAL_START_ADC(TEMP_CHAMBER_PIN);
         break;
@@ -2197,7 +2257,7 @@ void Temperature::isr() {
         break;
     #endif
 
-    #if HAS_TEMP_ADC_1
+    #if HAS_TEMP_ADC_1 && DISABLED(HEATER_1_USES_ADS1118)
       case PrepareTemp_1:
         HAL_START_ADC(TEMP_1_PIN);
         break;
@@ -2206,7 +2266,7 @@ void Temperature::isr() {
         break;
     #endif
 
-    #if HAS_TEMP_ADC_2
+    #if HAS_TEMP_ADC_2 && DISABLED(HEATER_2_USES_ADS1118)
       case PrepareTemp_2:
         HAL_START_ADC(TEMP_2_PIN);
         break;
@@ -2215,7 +2275,7 @@ void Temperature::isr() {
         break;
     #endif
 
-    #if HAS_TEMP_ADC_3
+    #if HAS_TEMP_ADC_3 && DISABLED(HEATER_3_USES_ADS1118)
       case PrepareTemp_3:
         HAL_START_ADC(TEMP_3_PIN);
         break;
@@ -2224,7 +2284,7 @@ void Temperature::isr() {
         break;
     #endif
 
-    #if HAS_TEMP_ADC_4
+    #if HAS_TEMP_ADC_4 && DISABLED(HEATER_4_USES_ADS1118)
       case PrepareTemp_4:
         HAL_START_ADC(TEMP_4_PIN);
         break;

@@ -23,7 +23,9 @@
 #undef THERMISTOR_NAME
 
 // Thermcouples
-#if THERMISTOR_ID == -4
+#if TEMP_SENSOR_0 <= -50 && TEMP_SENSOR_0 > -54
+  #define THERMISTOR_NAME "ADS1118"
+#elif THERMISTOR_ID == -4
   #define THERMISTOR_NAME "AD8495"
 #elif THERMISTOR_ID == -3
   #define THERMISTOR_NAME "MAX31855"

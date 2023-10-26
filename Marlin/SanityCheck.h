@@ -1125,7 +1125,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  */
 #if !HAS_HEATER_0
   #error "HEATER_0_PIN not defined for this board."
-#elif !PIN_EXISTS(TEMP_0) && !(defined(MAX6675_SS) && MAX6675_SS >= 0)
+#elif !PIN_EXISTS(TEMP_0) && !(defined(MAX6675_SS) && MAX6675_SS >= 0) && !(defined(ADS1118_CS) && ADS1118_CS >= 0)
   #error "TEMP_0_PIN not defined for this board."
 #elif ((defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)) && (!PIN_EXISTS(E0_STEP) || !PIN_EXISTS(E0_DIR)))
   #error "E0_STEP_PIN or E0_DIR_PIN not defined for this board."
@@ -1138,6 +1138,8 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 // Pins are required for heaters
 #if ENABLED(HEATER_0_USES_MAX6675) && !(defined(MAX6675_SS) && MAX6675_SS >= 0)
   #error "MAX6675_SS (required for TEMP_SENSOR_0) not defined for this board."
+#elif ENABLED(HEATER_0_USES_ADS1118) && !(defined(ADS1118_CS) && ADS1118_CS >= 0)
+  #error "ADS1118_CS not defined for this board."
 #elif (HOTENDS > 1 || ENABLED(HEATERS_PARALLEL)) && !HAS_HEATER_1
   #error "HEATER_1_PIN not defined for this board."
 #endif
@@ -1145,7 +1147,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 #if HOTENDS > 1
   #if TEMP_SENSOR_1 == 0
     #error "TEMP_SENSOR_1 is required with 2 or more HOTENDS."
-  #elif !PIN_EXISTS(TEMP_1)
+  #elif !PIN_EXISTS(TEMP_1) && !(ENABLED(HEATER_1_USES_ADS1118) && defined(ADS1118_CS) && ADS1118_CS >= 0)
     #error "TEMP_1_PIN not defined for this board."
   #endif
   #if HOTENDS > 2
@@ -1153,7 +1155,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
       #error "TEMP_SENSOR_2 is required with 3 or more HOTENDS."
     #elif !HAS_HEATER_2
       #error "HEATER_2_PIN not defined for this board."
-    #elif !PIN_EXISTS(TEMP_2)
+    #elif !PIN_EXISTS(TEMP_2) && !(ENABLED(HEATER_2_USES_ADS1118) && defined(ADS1118_CS) && ADS1118_CS >= 0)
       #error "TEMP_2_PIN not defined for this board."
     #endif
     #if HOTENDS > 3
@@ -1161,7 +1163,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
         #error "TEMP_SENSOR_3 is required with 4 or more HOTENDS."
       #elif !HAS_HEATER_3
         #error "HEATER_3_PIN not defined for this board."
-      #elif !PIN_EXISTS(TEMP_3)
+      #elif !PIN_EXISTS(TEMP_3) && !(ENABLED(HEATER_3_USES_ADS1118) && defined(ADS1118_CS) && ADS1118_CS >= 0)
         #error "TEMP_3_PIN not defined for this board."
       #endif
       #if HOTENDS > 4
@@ -1169,7 +1171,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
           #error "TEMP_SENSOR_4 is required with 5 HOTENDS."
         #elif !HAS_HEATER_4
           #error "HEATER_4_PIN not defined for this board."
-        #elif !PIN_EXISTS(TEMP_4)
+        #elif !PIN_EXISTS(TEMP_4) && !(ENABLED(HEATER_4_USES_ADS1118) && defined(ADS1118_CS) && ADS1118_CS >= 0)
           #error "TEMP_4_PIN not defined for this board."
         #endif
       #elif TEMP_SENSOR_4 != 0

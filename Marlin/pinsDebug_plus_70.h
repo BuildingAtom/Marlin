@@ -31,6 +31,8 @@
 #undef NUM_DIGITAL_PINS
 #if MB(BQ_ZUM_MEGA_3D)
   #define NUM_DIGITAL_PINS            85
+#elif MB(MIGHTYBOARD_REVG)
+  #define NUM_DIGITAL_PINS            86
 #elif MB(MIGHTYBOARD_REVE)
   #define NUM_DIGITAL_PINS            80
 #elif MB(MINIRAMBO)

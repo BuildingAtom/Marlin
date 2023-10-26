@@ -153,6 +153,8 @@
   #include "pins_CNCONTROLS_12.h"     // ATmega1280, ATmega2560                     env:megaatmega1280 env:megaatmega2560
 #elif MB(MIGHTYBOARD_REVE)
   #include "pins_MIGHTYBOARD_REVE.h"  // ATmega1280, ATmega2560                     env:megaatmega1280 env:megaatmega2560
+#elif MB(MIGHTYBOARD_REVG)
+  #include "pins_MIGHTYBOARD_REVG.h"  // ATmega1280, ATmega2560                     env:megaatmega1280 env:megaatmega2560
 #elif MB(CHEAPTRONIC)
   #include "pins_CHEAPTRONIC.h"       // ATmega2560                                 env:megaatmega2560
 #elif MB(CHEAPTRONIC_V2)

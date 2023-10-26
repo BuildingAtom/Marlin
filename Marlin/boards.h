@@ -90,6 +90,7 @@
 #define BOARD_CHEAPTRONIC       2     // Cheaptronic v1.0
 #define BOARD_CHEAPTRONIC_V2    21    // Cheaptronic v2.0
 #define BOARD_MIGHTYBOARD_REVE  200   // Makerbot Mightyboard Revision E
+#define BOARD_MIGHTYBOARD_REVG  201   // Makerbot Mightyboard Revision G
 #define BOARD_MEGATRONICS       70    // Megatronics
 #define BOARD_MEGATRONICS_2     701   // Megatronics v2.0
 #define BOARD_MEGATRONICS_3     703   // Megatronics v3.0

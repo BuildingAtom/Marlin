@@ -33,6 +33,7 @@ class SPI {
     FORCE_INLINE static void init() { softSPI.begin(); }
     FORCE_INLINE static void send(uint8_t data) { softSPI.send(data); }
     FORCE_INLINE static uint8_t receive() { return softSPI.receive(); }
+    FORCE_INLINE static uint8_t transfer(uint8_t data) { return softSPI.transfer(data); }
 };
 
 

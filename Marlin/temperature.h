@@ -60,31 +60,31 @@
  */
 enum ADCSensorState : char {
   StartSampling,
-  #if HAS_TEMP_ADC_0
+  #if HAS_TEMP_ADC_0 && DISABLED(HEATER_0_USES_ADS1118)
     PrepareTemp_0,
     MeasureTemp_0,
   #endif
-  #if HAS_TEMP_ADC_1
+  #if HAS_TEMP_ADC_1 && DISABLED(HEATER_1_USES_ADS1118)
     PrepareTemp_1,
     MeasureTemp_1,
   #endif
-  #if HAS_TEMP_ADC_2
+  #if HAS_TEMP_ADC_2 && DISABLED(HEATER_2_USES_ADS1118)
     PrepareTemp_2,
     MeasureTemp_2,
   #endif
-  #if HAS_TEMP_ADC_3
+  #if HAS_TEMP_ADC_3 && DISABLED(HEATER_3_USES_ADS1118)
     PrepareTemp_3,
     MeasureTemp_3,
   #endif
-  #if HAS_TEMP_ADC_4
+  #if HAS_TEMP_ADC_4 && DISABLED(HEATER_4_USES_ADS1118)
     PrepareTemp_4,
     MeasureTemp_4,
   #endif
-  #if HAS_HEATED_BED
+  #if HAS_HEATED_BED && DISABLED(HEATER_BED_USES_ADS1118)
     PrepareTemp_BED,
     MeasureTemp_BED,
   #endif
-  #if HAS_TEMP_CHAMBER
+  #if HAS_TEMP_CHAMBER && DISABLED(HEATER_CHAMBER_USES_ADS1118)
     PrepareTemp_CHAMBER,
     MeasureTemp_CHAMBER,
   #endif
