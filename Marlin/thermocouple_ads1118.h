@@ -76,8 +76,8 @@
 class Ads1118 {
 private:
     static int16_t reference_compensation;
-    static const uint8_t common_msb = ADS1118_START_SS | ADS1118_PGA_0_256 | ADS1118_MODE_SS;
-    // static const uint8_t common_msb = ADS1118_PGA_0_256;
+    // static const uint8_t common_msb = ADS1118_START_SS | ADS1118_PGA_0_256 | ADS1118_MODE_SS;
+    static const uint8_t common_msb = ADS1118_PGA_0_256;
     #if ADS1118_CHANNEL(0)
         static int16_t channel_0_reading;
         static const uint8_t channel_0_config_msb = common_msb | ADS1118_MUX_SEL_0;
@@ -117,10 +117,11 @@ private:
     static uint8_t read_state;
     static uint8_t temp_check_counter;
     // ADC on left, TEMP_C on right
-    static constexpr short ads1118_typek_table[21][2] PROGMEM = {
+    static constexpr short ads1118_typek_table[22][2] PROGMEM = {
         { ADS1118_mV_TO_STEP(-2.2430), -60 },
         { ADS1118_mV_TO_STEP(-1.4157), -37 },
         { ADS1118_mV_TO_STEP(-0.5464), -14 },
+        { ADS1118_mV_TO_STEP( 0.0   ),   0 },
         { ADS1118_mV_TO_STEP( 0.3573),   9 },
         { ADS1118_mV_TO_STEP( 1.2848),  32 },
         { ADS1118_mV_TO_STEP( 2.2295),  55 },
@@ -152,32 +153,32 @@ public:
 };
 
 #if ENABLED(HEATER_0_USES_ADS1118)
-    #define HEATER_0_RAW_HI_TEMP 2099
-    #define HEATER_0_RAW_LO_TEMP -287
+    #define HEATER_0_RAW_HI_TEMP ADS1118_mV_TO_STEP(16.3970*OVERSAMPLENR)
+    #define HEATER_0_RAW_LO_TEMP ADS1118_mV_TO_STEP(-2.2430*OVERSAMPLENR)
 #endif
 #if ENABLED(HEATER_1_USES_ADS1118)
-    #define HEATER_1_RAW_HI_TEMP 2099
-    #define HEATER_1_RAW_LO_TEMP -287
+    #define HEATER_1_RAW_HI_TEMP ADS1118_mV_TO_STEP(16.3970*OVERSAMPLENR)
+    #define HEATER_1_RAW_LO_TEMP ADS1118_mV_TO_STEP(-2.2430*OVERSAMPLENR)
 #endif
 #if ENABLED(HEATER_2_USES_ADS1118)
-    #define HEATER_2_RAW_HI_TEMP 2099
-    #define HEATER_2_RAW_LO_TEMP -287
+    #define HEATER_2_RAW_HI_TEMP ADS1118_mV_TO_STEP(16.3970*OVERSAMPLENR)
+    #define HEATER_2_RAW_LO_TEMP ADS1118_mV_TO_STEP(-2.2430*OVERSAMPLENR)
 #endif
 #if ENABLED(HEATER_3_USES_ADS1118)
-    #define HEATER_3_RAW_HI_TEMP 2099
-    #define HEATER_3_RAW_LO_TEMP -287
+    #define HEATER_3_RAW_HI_TEMP ADS1118_mV_TO_STEP(16.3970*OVERSAMPLENR)
+    #define HEATER_3_RAW_LO_TEMP ADS1118_mV_TO_STEP(-2.2430*OVERSAMPLENR)
 #endif
 #if ENABLED(HEATER_4_USES_ADS1118)
-    #define HEATER_4_RAW_HI_TEMP 2099
-    #define HEATER_4_RAW_LO_TEMP -287
+    #define HEATER_4_RAW_HI_TEMP ADS1118_mV_TO_STEP(16.3970*OVERSAMPLENR)
+    #define HEATER_4_RAW_LO_TEMP ADS1118_mV_TO_STEP(-2.2430*OVERSAMPLENR)
 #endif
 #if ENABLED(HEATER_BED_USES_ADS1118)
-    #define HEATER_BED_RAW_HI_TEMP 2099
-    #define HEATER_BED_RAW_LO_TEMP -287
+    #define HEATER_BED_RAW_HI_TEMP ADS1118_mV_TO_STEP(16.3970*OVERSAMPLENR)
+    #define HEATER_BED_RAW_LO_TEMP ADS1118_mV_TO_STEP(-2.2430*OVERSAMPLENR)
 #endif
 #if ENABLED(HEATER_CHAMBER_USES_ADS1118)
-    #define HEATER_CHAMBER_RAW_HI_TEMP 2099
-    #define HEATER_CHAMBER_RAW_LO_TEMP -287
+    #define HEATER_CHAMBER_RAW_HI_TEMP ADS1118_mV_TO_STEP(16.3970*OVERSAMPLENR)
+    #define HEATER_CHAMBER_RAW_LO_TEMP ADS1118_mV_TO_STEP(-2.2430*OVERSAMPLENR)
 #endif
 
 // Type K table

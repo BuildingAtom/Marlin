@@ -66,24 +66,20 @@ int16_t Ads1118::reference_compensation = 0;
 uint8_t Ads1118::read_state = 0;
 uint8_t Ads1118::config_state = 0;
 uint8_t Ads1118::temp_check_counter = 0;
-constexpr short Ads1118::ads1118_typek_table[21][2] PROGMEM;
+constexpr short Ads1118::ads1118_typek_table[22][2] PROGMEM;
 
 #define TRANSFERBIT(B,n,O) do{\
   WRITE(ADS1118_SCK_PIN, HIGH); \
   WRITE(ADS1118_DI_PIN, TEST(B,n)); \
-  DELAY_NS(100);\
   WRITE(ADS1118_SCK_PIN, LOW);\
   if(READ(ADS1118_DO_PIN)) SBI(O,n);\
-  DELAY_NS(100);\
   }while(0)
 
 #define SENDBIT(B,n) do{\
   WRITE(ADS1118_SCK_PIN, HIGH); \
   WRITE(ADS1118_DI_PIN, TEST(B,n)); \
-  DELAY_NS(100);\
   WRITE(ADS1118_SCK_PIN, LOW); \
   READ(ADS1118_DO_PIN);\
-  DELAY_NS(100);\
   }while(0)
 
 #define ADS1118_SEND(M,L) do{\
@@ -144,6 +140,7 @@ void Ads1118::init()
 
   // Start the first update
   ADS1118_SEND(common_msb, reference_config_lsb);
+  ADS1118_SEND(common_msb, reference_config_lsb);
   // ads1118_spi.send(common_msb);
   // ads1118_spi.send(reference_config_lsb);
   // ads1118_spi.send(common_msb);
@@ -153,21 +150,21 @@ void Ads1118::init()
 
   // Done with this chip (so we can do 16 bit transmissions)
   DELAY_NS(100);       // Ensure 100ns delay
-  WRITE(ADS1118_CS, HIGH);
+  // WRITE(ADS1118_CS, HIGH);
 }
 
 uint8_t Ads1118::update()
 {
   // Select to read
-  WRITE(ADS1118_CS, LOW);
-  SERIAL_ECHOLN("Up");
-  DELAY_NS(100);       // Ensure 100ns delay
+  // SERIAL_ECHOLN("Up");
+  // WRITE(ADS1118_CS, LOW);
+  // DELAY_NS(100);       // Ensure 100ns delay
 
   // check that data ready flag is low
   // if it is high, return 1 so the calling function knows to try again later
   if (READ(ADS1118_DO_PIN)) {
-    SERIAL_ECHOLN("NR");
     // WRITE(ADS1118_CS, HIGH);
+    SERIAL_ECHOLN("NR");
     return 1;
   }
 
@@ -188,6 +185,7 @@ uint8_t Ads1118::update()
   //   temp_check_counter++;
   #define ADS1118_CONFIG_AND_READ(C)                            \
     ADS1118_TRANSFER(channel_##C##_config_msb, common_config_lsb, raw);    \
+    ADS1118_SEND(channel_##C##_config_msb, common_config_lsb); \
     read_state = (uint8_t)(0x01 << C);                                   \
     temp_check_counter++;
 
@@ -202,6 +200,7 @@ uint8_t Ads1118::update()
     // ads1118_spi.transfer(config_msb);
     // ads1118_spi.transfer(config_lsb);
     ADS1118_TRANSFER(common_msb, reference_config_lsb, raw);
+    ADS1118_SEND(common_msb, reference_config_lsb);
     read_state = 0;
     // We can end early here as this is the 16-bit transmission approach
     config_state = 0xFF;
@@ -358,18 +357,16 @@ uint8_t Ads1118::update()
     // ERROR OUT HARD HERE
     SERIAL_ECHOLN("BS");
   }
-  // Done with this chip (so we can do 16 bit transmissions)
-  WRITE(ADS1118_CS, HIGH);
   // SERIAL_ECHOLN("G");
   return 0;
 }
 
 short Ads1118::C_to_ADC_steps(int16_t C_reading)
 {
-  uint8_t l = 0, r = 21, m;
+  uint8_t l = 0, r = 22, m;
   for (;;) {
     m = (l + r) >> 1;
-    if (m == l || m == r) return (short)pgm_read_word(&ads1118_typek_table[20][0]);
+    if (m == l || m == r) return (short)pgm_read_word(&ads1118_typek_table[21][0]);
     short v00 = pgm_read_word(&ads1118_typek_table[m-1][1]),
           v10 = pgm_read_word(&ads1118_typek_table[m-0][1]);
          if (C_reading < v00) r = m;
@@ -384,10 +381,10 @@ short Ads1118::C_to_ADC_steps(int16_t C_reading)
 
 float Ads1118::ADC_steps_to_C(int16_t C_reading)
 {
-  uint8_t l = 0, r = 21, m;
+  uint8_t l = 0, r = 22, m;
   for (;;) {
     m = (l + r) >> 1;
-    if (m == l || m == r) return (short)pgm_read_word(&ads1118_typek_table[20][1]);//ads1118_typek_table[20][1];
+    if (m == l || m == r) return (short)pgm_read_word(&ads1118_typek_table[21][1]);//ads1118_typek_table[20][1];
     short v00 = pgm_read_word(&ads1118_typek_table[m-1][0]),
           v10 = pgm_read_word(&ads1118_typek_table[m-0][0]);
          if (C_reading < v00) r = m;
@@ -402,11 +399,12 @@ float Ads1118::ADC_steps_to_C(int16_t C_reading)
 
 int16_t Ads1118::channel_raw(uint8_t channel)
 {
-  // SERIAL_ECHOLNPAIR("ch ", channel);
+  SERIAL_ECHOLNPAIR("ch ", channel);
+  SERIAL_ECHOLNPAIR("ref ", reference_compensation);
   switch(channel){
     #if ADS1118_CHANNEL(0)
       case 0:
-        // SERIAL_ECHOLNPAIR("raw ", channel_0_reading);
+        SERIAL_ECHOLNPAIR("raw ", channel_0_reading + reference_compensation);
         return channel_0_reading + reference_compensation;
     #endif
     #if ADS1118_CHANNEL(1)
@@ -421,7 +419,7 @@ int16_t Ads1118::channel_raw(uint8_t channel)
     #endif
     #if ADS1118_CHANNEL(3)
       case 3:
-        // SERIAL_ECHOLNPAIR("raw ", channel_3_reading);
+        SERIAL_ECHOLNPAIR("raw ", channel_3_reading + reference_compensation);
         return channel_3_reading + reference_compensation;
     #endif
     #if ADS1118_CHANNEL(4)

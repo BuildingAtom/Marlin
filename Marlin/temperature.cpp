@@ -1206,6 +1206,7 @@ void Temperature::init() {
       delay(25);
       ads1118.update();
     #endif
+    delay(25);
   #endif
 
   HAL_adc_init();
@@ -2257,6 +2258,7 @@ void Temperature::isr() {
       // We'll only take the last measurement during the readings_ready stage.
       #if ENABLED(TEMP_ADS1118)
         if (temp_count % 2) ads1118.update();
+        // ads1118.update();
       #endif
       break;
 
