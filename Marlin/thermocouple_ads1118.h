@@ -32,7 +32,7 @@
 #if ENABLED(TEMP_ADS1118)
 
 // Make some register maps
-#include "softspi.h"
+// #include "softspi.h"
 
 // MSB registers
 #define ADS1118_START_SS        0B10000000      // Start a single shot conversion
@@ -76,8 +76,8 @@
 class Ads1118 {
 private:
     static int16_t reference_compensation;
-    // static const uint8_t common_msb = ADS1118_START_SS | ADS1118_PGA_0_256 | ADS1118_MODE_SS;
-    static const uint8_t common_msb = ADS1118_PGA_0_256;
+    static const uint8_t common_msb = ADS1118_START_SS | ADS1118_PGA_0_256 | ADS1118_MODE_SS;
+    // static const uint8_t common_msb = ADS1118_PGA_0_256;
     #if ADS1118_CHANNEL(0)
         static int16_t channel_0_reading;
         static const uint8_t channel_0_config_msb = common_msb | ADS1118_MUX_SEL_0;
@@ -117,7 +117,7 @@ private:
     static uint8_t read_state;
     static uint8_t temp_check_counter;
     // ADC on left, TEMP_C on right
-    static constexpr short ads1118_typek_table[21][2] = {
+    static constexpr short ads1118_typek_table[21][2] PROGMEM = {
         { -287, ADS1118_mV_TO_STEP(-2.2430) },
         { -181, ADS1118_mV_TO_STEP(-1.4157) },
         {  -70, ADS1118_mV_TO_STEP(-0.5464) },
@@ -142,7 +142,7 @@ private:
     };
     static short C_to_ADC_steps(int16_t C_reading);
     // For softspi, we want the output to be low, and clock to be low, so we need lsb 1 to be true
-    static SoftSPI<ADS1118_DO_PIN, ADS1118_DI_PIN, ADS1118_SCK_PIN, 1> ads1118_spi;
+    // static SoftSPI<ADS1118_DO_PIN, ADS1118_DI_PIN, ADS1118_SCK_PIN, 1> ads1118_spi;
 public:
     void init();
     uint8_t update();

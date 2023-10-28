@@ -66,18 +66,67 @@ int16_t Ads1118::reference_compensation = 0;
 uint8_t Ads1118::read_state = 0;
 uint8_t Ads1118::config_state = 0;
 uint8_t Ads1118::temp_check_counter = 0;
-constexpr short Ads1118::ads1118_typek_table[21][2];
+constexpr short Ads1118::ads1118_typek_table[21][2] PROGMEM;
+
+#define TRANSFERBIT(B,n,O) do{\
+  WRITE(ADS1118_SCK_PIN, HIGH); \
+  WRITE(ADS1118_DI_PIN, TEST(B,n)); \
+  WRITE(ADS1118_SCK_PIN, LOW);\
+  if(READ(ADS1118_DO_PIN)) SBI(O,n);}while(0)
+
+#define SENDBIT(B,n) do{\
+  WRITE(ADS1118_SCK_PIN, HIGH); \
+  WRITE(ADS1118_DI_PIN, TEST(B,n)); \
+  WRITE(ADS1118_SCK_PIN, LOW); \
+  READ(ADS1118_DO_PIN);}while(0)
+
+#define ADS1118_SEND(M,L) do{\
+  SENDBIT(M,7); \
+  SENDBIT(M,6); \
+  SENDBIT(M,5); \
+  SENDBIT(M,4); \
+  SENDBIT(M,3); \
+  SENDBIT(M,2); \
+  SENDBIT(M,1); \
+  SENDBIT(M,0); \
+  SENDBIT(L,7); \
+  SENDBIT(L,6); \
+  SENDBIT(L,5); \
+  SENDBIT(L,4); \
+  SENDBIT(L,3); \
+  SENDBIT(L,2); \
+  SENDBIT(L,1); \
+  SENDBIT(L,0);}while(0)
+
+#define ADS1118_TRANSFER(M,L,O) do{\
+  TRANSFERBIT(M,7,O); \
+  TRANSFERBIT(M,6,O); \
+  TRANSFERBIT(M,5,O); \
+  TRANSFERBIT(M,4,O); \
+  TRANSFERBIT(M,3,O); \
+  TRANSFERBIT(M,2,O); \
+  TRANSFERBIT(M,1,O); \
+  TRANSFERBIT(M,0,O); \
+  TRANSFERBIT(L,7,O); \
+  TRANSFERBIT(L,6,O); \
+  TRANSFERBIT(L,5,O); \
+  TRANSFERBIT(L,4,O); \
+  TRANSFERBIT(L,3,O); \
+  TRANSFERBIT(L,2,O); \
+  TRANSFERBIT(L,1,O); \
+  TRANSFERBIT(L,0,O);}while(0)
 
 void Ads1118::init()
 {
   // NEEDED CONFIGUCATION
-  // SET_INPUT_PULLUP(ADS1118_DO_PIN);
-  // OUT_WRITE(ADS1118_SCK_PIN, LOW);
-  // OUT_WRITE(ADS1118_DI_PIN, LOW);
+  // Unselect the chip
   OUT_WRITE(ADS1118_CS, HIGH);
+  // SET_INPUT_PULLUP(ADS1118_DO_PIN);
+  OUT_WRITE(ADS1118_SCK_PIN, LOW);
+  OUT_WRITE(ADS1118_DI_PIN, LOW);
   DELAY_NS(200);       // Ensure 200ns delay to reset SPI
 
-  ads1118_spi.begin();
+  // ads1118_spi.begin();
 
   // Select chip
   WRITE(ADS1118_CS, LOW);
@@ -87,58 +136,65 @@ void Ads1118::init()
   SERIAL_ECHOLNPAIR("ADS1118 unplugged reading: ", (int16_t)ADS1118_UNPLUGGED_BITS);
 
   // Start the first update
-  ads1118_spi.send(common_msb);
-  ads1118_spi.send(reference_config_lsb);
-  ads1118_spi.send(common_msb);
-  ads1118_spi.send(reference_config_lsb);
+  ADS1118_SEND(common_msb, reference_config_lsb);
+  // ads1118_spi.send(common_msb);
+  // ads1118_spi.send(reference_config_lsb);
+  // ads1118_spi.send(common_msb);
+  // ads1118_spi.send(reference_config_lsb);
   // Setup the next config
   config_state = 0xFF;
 
   // Done with this chip (so we can do 16 bit transmissions)
-  // WRITE(ADS1118_CS, HIGH);
+  DELAY_NS(100);       // Ensure 100ns delay
+  WRITE(ADS1118_CS, HIGH);
 }
 
 uint8_t Ads1118::update()
 {
   // Select to read
-  // WRITE(ADS1118_CS, LOW);
+  WRITE(ADS1118_CS, LOW);
   // SERIAL_ECHOLN("Up");
   // DELAY_NS(100);       // Ensure 100ns delay
 
   // check that data ready flag is low
-  // if it is high, return 1 so the calling function knows to try again
+  // if it is high, return 1 so the calling function knows to try again later
   if (READ(ADS1118_DO_PIN) == HIGH) {
     // SERIAL_ECHOLN("NR");
-    // WRITE(ADS1118_CS, HIGH);
+    WRITE(ADS1118_CS, HIGH);
     return 1;
   }
 
-  uint8_t config_msb = common_msb;
-  uint8_t config_lsb = common_config_lsb;
+  // uint8_t config_msb = common_msb;
+  // uint8_t config_lsb = common_config_lsb;
   uint8_t last_read_state = read_state;
   int16_t raw = 0;
 
   // Macro to make the following expansion less repetitive
+  // #define ADS1118_CONFIG_AND_READ(C)                            \
+  //   config_msb = channel_##C##_config_msb;                      \
+  //   raw |= ads1118_spi.transfer(config_msb);   \
+  //   raw <<= 8;\
+  //   raw |= ads1118_spi.transfer(config_lsb);          \
+  //   ads1118_spi.transfer(config_msb); \
+  //   ads1118_spi.transfer(config_lsb); \
+  //   read_state = (0x01 << C);                                   \
+  //   temp_check_counter++;
   #define ADS1118_CONFIG_AND_READ(C)                            \
-    config_msb = channel_##C##_config_msb;                      \
-    raw |= ads1118_spi.transfer(config_msb);   \
-    raw <<= 8;\
-    raw |= ads1118_spi.transfer(config_lsb);          \
-    ads1118_spi.transfer(config_msb); \
-    ads1118_spi.transfer(config_lsb); \
-    read_state = (0x01 << C);                                   \
+    ADS1118_TRANSFER(channel_##C##_config_msb, common_config_lsb, raw);    \
+    read_state = (uint8_t)(0x01 << C);                                   \
     temp_check_counter++;
 
   // If we want to do a reference reading
   if (config_state == 0) {
     // SERIAL_ECHOLN("RR");
-    config_lsb = reference_config_lsb;
-    // Send the MSB and LSB and get the data
-    raw |= ads1118_spi.transfer(config_msb);
-    raw <<= 8;
-    raw |= ads1118_spi.transfer(config_lsb);
-    ads1118_spi.transfer(config_msb);
-    ads1118_spi.transfer(config_lsb);
+    // config_lsb = reference_config_lsb;
+    // // Send the MSB and LSB and get the data
+    // raw |= ads1118_spi.transfer(config_msb);
+    // raw <<= 8;
+    // raw |= ads1118_spi.transfer(config_lsb);
+    // ads1118_spi.transfer(config_msb);
+    // ads1118_spi.transfer(config_lsb);
+    ADS1118_TRANSFER(common_msb, reference_config_lsb, raw);
     read_state = 0;
     // We can end early here as this is the 16-bit transmission approach
     config_state = 0xFF;
@@ -149,7 +205,7 @@ uint8_t Ads1118::update()
       ADS1118_CONFIG_AND_READ(0)
       #if (ADS1118_CHANNEL(1) || ADS1118_CHANNEL(2) || ADS1118_CHANNEL(3) \
           || ADS1118_CHANNEL(4) || ADS1118_CHANNEL(5) || ADS1118_CHANNEL(6) || ADS1118_CHANNEL(7))
-        config_state = (0xFF << 1);
+        config_state = (uint8_t)(0xFF << 1);
       #else
         config_state = 0xFF;
       #endif
@@ -161,7 +217,7 @@ uint8_t Ads1118::update()
       ADS1118_CONFIG_AND_READ(1)
       #if (ADS1118_CHANNEL(2) || ADS1118_CHANNEL(3) || ADS1118_CHANNEL(4) \
           || ADS1118_CHANNEL(5) || ADS1118_CHANNEL(6) || ADS1118_CHANNEL(7))
-        config_state = (0xFF << 2);
+        config_state = (uint8_t)(0xFF << 2);
       #else
         config_state = 0xFF;
       #endif
@@ -173,7 +229,7 @@ uint8_t Ads1118::update()
       ADS1118_CONFIG_AND_READ(2)
       #if (ADS1118_CHANNEL(3) || ADS1118_CHANNEL(4) || ADS1118_CHANNEL(5) \
           || ADS1118_CHANNEL(6) || ADS1118_CHANNEL(7))
-        config_state = (0xFF << 3);
+        config_state = (uint8_t)(0xFF << 3);
       #else
         config_state = 0xFF;
       #endif
@@ -184,7 +240,7 @@ uint8_t Ads1118::update()
     else if(config_state & (0x01 << 3)) {
       ADS1118_CONFIG_AND_READ(3)
       #if (ADS1118_CHANNEL(4) || ADS1118_CHANNEL(5) || ADS1118_CHANNEL(6) || ADS1118_CHANNEL(7))
-        config_state = (0xFF << 4);
+        config_state = (uint8_t)(0xFF << 4);
       #else
         config_state = 0xFF;
       #endif
@@ -206,7 +262,7 @@ uint8_t Ads1118::update()
     else if(config_state & (0x01 << 5)) {
       ADS1118_CONFIG_AND_READ(5)
       #if (ADS1118_CHANNEL(6) || ADS1118_CHANNEL(7))
-        config_state = (0xFF << 6);
+        config_state = (uint8_t)(0xFF << 6);
       #else
         config_state = 0xFF;
       #endif
@@ -217,7 +273,7 @@ uint8_t Ads1118::update()
     else if(config_state & (0x01 << 6)) {
       ADS1118_CONFIG_AND_READ(6)
       #if ADS1118_CHANNEL(7)
-        config_state = (0xFF << 7);
+        config_state = (uint8_t)(0xFF << 7);
       #else
         config_state = 0xFF;
       #endif
@@ -236,8 +292,6 @@ uint8_t Ads1118::update()
     // ERROR OUT HARD HERE
     SERIAL_ECHOLN("BC");
   }
-  // Done with this chip (so we can do 16 bit transmissions)
-  // WRITE(ADS1118_CS, HIGH);
 
   // See if next time we're going to check the reference temperature
   if (temp_check_counter >= ADS1118_TS_CHECK_CYCLES) {
@@ -297,48 +351,46 @@ uint8_t Ads1118::update()
     // ERROR OUT HARD HERE
     SERIAL_ECHOLN("BS");
   }
+  // Done with this chip (so we can do 16 bit transmissions)
+  WRITE(ADS1118_CS, HIGH);
   // SERIAL_ECHOLN("G");
   return 0;
 }
 
-static short Ads1118::C_to_ADC_steps(int16_t C_reading)
+short Ads1118::C_to_ADC_steps(int16_t C_reading)
 {
-    do{
-        uint8_t l = 0, r = 21, m;
-        for (;;) {
-            m = (l + r) >> 1;
-            if (m == l || m == r) return ads1118_typek_table[20][0];
-            short v00 = ads1118_typek_table[m-1][1],
-                  v10 = ads1118_typek_table[m][1];
-                 if (C_reading < v00) r = m;
-            else if (C_reading > v10) l = m;
-            else {
-                const short v01 = ads1118_typek_table[m-1][0],
-                            v11 = ads1118_typek_table[m][0];
-                return v01 + (C_reading - v00) * float(v11 - v01) / float(v10 - v00);
-            }
-        }
-    }while(0);
+  uint8_t l = 0, r = 21, m;
+  for (;;) {
+    m = (l + r) >> 1;
+    if (m == l || m == r) return (short)pgm_read_word(&ads1118_typek_table[20][0]);
+    short v00 = pgm_read_word(&ads1118_typek_table[m-1][1]),
+          v10 = pgm_read_word(&ads1118_typek_table[m-0][1]);
+         if (C_reading < v00) r = m;
+    else if (C_reading > v10) l = m;
+    else {
+        const short v01 = (short)pgm_read_word(&ads1118_typek_table[m-1][0]),
+                    v11 = (short)pgm_read_word(&ads1118_typek_table[m-0][0]);
+        return v01 + (C_reading - v00) * float(v11 - v01) / float(v10 - v00);
+    }
+  }
 }
 
-static float Ads1118::ADC_steps_to_C(int16_t C_reading)
+float Ads1118::ADC_steps_to_C(int16_t C_reading)
 {
-    do{
-        uint8_t l = 0, r = 21, m;
-        for (;;) {
-            m = (l + r) >> 1;
-            if (m == l || m == r) return ads1118_typek_table[20][1];
-            short v00 = ads1118_typek_table[m-1][0],
-                  v10 = ads1118_typek_table[m][0];
-                 if (C_reading < v00) r = m;
-            else if (C_reading > v10) l = m;
-            else {
-                const short v01 = ads1118_typek_table[m-1][1],
-                            v11 = ads1118_typek_table[m][1];
-                return v01 + (C_reading - v00) * float(v11 - v01) / float(v10 - v00);
-            }
-        }
-    }while(0);
+  uint8_t l = 0, r = 21, m;
+  for (;;) {
+    m = (l + r) >> 1;
+    if (m == l || m == r) return (short)pgm_read_word(&ads1118_typek_table[20][1]);//ads1118_typek_table[20][1];
+    short v00 = pgm_read_word(&ads1118_typek_table[m-1][0]),
+          v10 = pgm_read_word(&ads1118_typek_table[m-0][0]);
+         if (C_reading < v00) r = m;
+    else if (C_reading > v10) l = m;
+    else {
+        const short v01 = (short)pgm_read_word(&ads1118_typek_table[m-1][1]),
+                    v11 = (short)pgm_read_word(&ads1118_typek_table[m-0][1]);
+        return v01 + (C_reading - v00) * float(v11 - v01) / float(v10 - v00);
+    }
+  }
 }
 
 int16_t Ads1118::channel_raw(uint8_t channel)
