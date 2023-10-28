@@ -938,7 +938,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #if ENABLED(HEATER_0_USES_MAX6675)
         return raw * 0.25;
       #elif ENABLED(HEATER_0_USES_ADS1118)
-        return ads1118.channel_temp(HEATER_0_CHANNEL);
+        return Ads1118::ADC_steps_to_C(raw);
       #elif ENABLED(HEATER_0_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_0_USES_AD8495)
@@ -948,7 +948,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #endif
     case 1:
       #if ENABLED(HEATER_1_USES_ADS1118)
-        return ads1118.channel_temp(HEATER_1_CHANNEL);
+        return Ads1118::ADC_steps_to_C(raw);
       #elif ENABLED(HEATER_1_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_1_USES_AD8495)
@@ -958,7 +958,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #endif
     case 2:
       #if ENABLED(HEATER_2_USES_ADS1118)
-        return ads1118.channel_temp(HEATER_2_CHANNEL);
+        return Ads1118::ADC_steps_to_C(raw);
       #elif ENABLED(HEATER_2_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_2_USES_AD8495)
@@ -968,7 +968,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #endif
     case 3:
       #if ENABLED(HEATER_3_USES_ADS1118)
-        return ads1118.channel_temp(HEATER_3_CHANNEL);
+        return Ads1118::ADC_steps_to_C(raw);
       #elif ENABLED(HEATER_3_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_3_USES_AD8495)
@@ -978,7 +978,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #endif
     case 4:
       #if ENABLED(HEATER_4_USES_ADS1118)
-        return ads1118.channel_temp(HEATER_4_CHANNEL);
+        return Ads1118::ADC_steps_to_C(raw);
       #elif ENABLED(HEATER_4_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_4_USES_AD8495)
@@ -1005,7 +1005,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
     #if ENABLED(HEATER_BED_USES_THERMISTOR)
       SCAN_THERMISTOR_TABLE(BEDTEMPTABLE, BEDTEMPTABLE_LEN);
     #elif ENABLED(HEATER_BED_USES_ADS1118)
-      return ads1118.channel_temp(HEATER_BED_CHANNEL);
+      return Ads1118::ADC_steps_to_C(raw);
     #elif ENABLED(HEATER_BED_USES_AD595)
       return TEMP_AD595(raw);
     #elif ENABLED(HEATER_BED_USES_AD8495)
@@ -1023,7 +1023,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
     #if ENABLED(HEATER_CHAMBER_USES_THERMISTOR)
       SCAN_THERMISTOR_TABLE(CHAMBERTEMPTABLE, CHAMBERTEMPTABLE_LEN);
     #elif ENABLED(HEATER_CHAMBER_USES_ADS1118)
-      return ads1118.channel_temp(HEATER_CHAMBER_CHANNEL);
+      return Ads1118::ADC_steps_to_C(raw);
     #elif ENABLED(HEATER_CHAMBER_USES_AD595)
       return TEMP_AD595(raw);
     #elif ENABLED(HEATER_CHAMBER_USES_AD8495)
@@ -1176,6 +1176,36 @@ void Temperature::init() {
 
   #if ENABLED(TEMP_ADS1118)
     ads1118.init();
+    delay(50);
+    ads1118.update();
+    #if ENABLED(HEATER_0_USES_ADS1118)
+      delay(25);
+      ads1118.update();
+    #endif
+    #if ENABLED(HEATER_1_USES_ADS1118)
+      delay(25);
+      ads1118.update();
+    #endif
+    #if ENABLED(HEATER_2_USES_ADS1118)
+      delay(25);
+      ads1118.update();
+    #endif
+    #if ENABLED(HEATER_3_USES_ADS1118)
+      delay(25);
+      ads1118.update();
+    #endif
+    #if ENABLED(HEATER_4_USES_ADS1118)
+      delay(25);
+      ads1118.update();
+    #endif
+    #if ENABLED(HEATER_BED_USES_ADS1118)
+      delay(25);
+      ads1118.update();
+    #endif
+    #if ENABLED(HEATER_CHAMBER_USES_ADS1118)
+      delay(25);
+      ads1118.update();
+    #endif
   #endif
 
   HAL_adc_init();
@@ -1898,7 +1928,7 @@ HAL_TEMP_TIMER_ISR {
   HAL_timer_isr_epilogue(TEMP_TIMER_NUM);
 }
 
-uint8_t ads1118_success_flag = 0;
+// uint8_t ads1118_success_flag = 0;
 
 void Temperature::isr() {
 
@@ -2217,16 +2247,16 @@ void Temperature::isr() {
     }
 
     case StartSampling:                                   // Start of sampling loops. Do updates/checks.
-      if (++temp_count >= OVERSAMPLENR && ads1118_success_flag >= 3) {                 // 10 * 16 * 1/(16000000/64/256)  = 164ms.
+      if (++temp_count >= OVERSAMPLENR) {                 // 10 * 16 * 1/(16000000/64/256)  = 164ms.
         temp_count = 0;
         readings_ready();
-        ads1118_success_flag = 0;
+        // ads1118_success_flag = 0;
+        ads1118.update();
       }
-      // If we have the ADS1118, update every MIN_ADC_ISR_LOOPS (10), which will request at 97.6Hz
-      // This is a bit too fast for the selected sample rate (64Hz), but that's okay.
+      // If we have the ADS1118, update every other MIN_ADC_ISR_LOOPS (10), which will request at 97.6Hz/2
       // We'll only take the last measurement during the readings_ready stage.
       #if ENABLED(TEMP_ADS1118)
-        ads1118_success_flag += !ads1118.update();
+        // if (temp_count % 2) ads1118.update();
       #endif
       break;
 

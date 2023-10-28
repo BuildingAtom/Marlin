@@ -32,7 +32,7 @@
 #if ENABLED(TEMP_ADS1118)
 
 // Make some register maps
-#include "MarlinSPI.h"
+#include "softspi.h"
 
 // MSB registers
 #define ADS1118_START_SS        0B10000000      // Start a single shot conversion
@@ -76,7 +76,8 @@
 class Ads1118 {
 private:
     static int16_t reference_compensation;
-    static const uint8_t common_msb = ADS1118_START_SS | ADS1118_PGA_0_256 | ADS1118_MODE_SS;
+    // static const uint8_t common_msb = ADS1118_START_SS | ADS1118_PGA_0_256 | ADS1118_MODE_SS;
+    static const uint8_t common_msb = ADS1118_PGA_0_256;
     #if ADS1118_CHANNEL(0)
         static int16_t channel_0_reading;
         static const uint8_t channel_0_config_msb = common_msb | ADS1118_MUX_SEL_0;
@@ -139,14 +140,15 @@ private:
         { 1975, ADS1118_mV_TO_STEP(15.4277) },
         { 2099, ADS1118_mV_TO_STEP(16.3970) },
     };
-    short C_to_ADC_steps(int16_t C_reading);
-    float ADC_steps_to_C(int16_t ADC_steps);
-    static SPI<ADS1118_DO_PIN, ADS1118_DI_PIN, ADS1118_SCK_PIN> ads1118_spi;
+    static short C_to_ADC_steps(int16_t C_reading);
+    // For softspi, we want the output to be low, and clock to be low, so we need lsb 1 to be true
+    static SoftSPI<ADS1118_DO_PIN, ADS1118_DI_PIN, ADS1118_SCK_PIN, 1> ads1118_spi;
 public:
     void init();
     uint8_t update();
     int16_t channel_raw(uint8_t channel);
     float channel_temp(uint8_t channel);
+    static float ADC_steps_to_C(int16_t ADC_steps);
 };
 
 #if ENABLED(HEATER_0_USES_ADS1118)
