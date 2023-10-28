@@ -127,13 +127,13 @@
 //
 // 78 E2 SCK
 // 79 E6 CS
-// 80 E7 DI (MOSI)
-// 84 H2 DO (MISO)
+// 80 E7 DO (MISO)
+// 84 H2 DI (MOSI)
 //
 #define THERMO_SCK_PIN     78   // E2
 #define THERMO_CS_PIN      79   // E6
-#define THERMO_MOSI_PIN    80   // E7
-#define THERMO_MISO_PIN    84   // H2
+#define THERMO_MISO_PIN    80   // E7
+#define THERMO_MOSI_PIN    84   // H2
 
 #define ADS1118_SCK_PIN    THERMO_SCK_PIN
 #define ADS1118_CS         THERMO_CS_PIN

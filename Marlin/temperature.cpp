@@ -938,7 +938,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #if ENABLED(HEATER_0_USES_MAX6675)
         return raw * 0.25;
       #elif ENABLED(HEATER_0_USES_ADS1118)
-        return Ads1118::ADC_steps_to_C(raw);
+        return Ads1118::ADC_steps_to_C(raw/OVERSAMPLENR);
       #elif ENABLED(HEATER_0_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_0_USES_AD8495)
@@ -948,7 +948,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #endif
     case 1:
       #if ENABLED(HEATER_1_USES_ADS1118)
-        return Ads1118::ADC_steps_to_C(raw);
+        return Ads1118::ADC_steps_to_C(raw/OVERSAMPLENR);
       #elif ENABLED(HEATER_1_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_1_USES_AD8495)
@@ -958,7 +958,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #endif
     case 2:
       #if ENABLED(HEATER_2_USES_ADS1118)
-        return Ads1118::ADC_steps_to_C(raw);
+        return Ads1118::ADC_steps_to_C(raw/OVERSAMPLENR);
       #elif ENABLED(HEATER_2_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_2_USES_AD8495)
@@ -968,7 +968,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #endif
     case 3:
       #if ENABLED(HEATER_3_USES_ADS1118)
-        return Ads1118::ADC_steps_to_C(raw);
+        return Ads1118::ADC_steps_to_C(raw/OVERSAMPLENR);
       #elif ENABLED(HEATER_3_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_3_USES_AD8495)
@@ -978,7 +978,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
       #endif
     case 4:
       #if ENABLED(HEATER_4_USES_ADS1118)
-        return Ads1118::ADC_steps_to_C(raw);
+        return Ads1118::ADC_steps_to_C(raw/OVERSAMPLENR);
       #elif ENABLED(HEATER_4_USES_AD595)
         return TEMP_AD595(raw);
       #elif ENABLED(HEATER_4_USES_AD8495)
@@ -1005,7 +1005,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
     #if ENABLED(HEATER_BED_USES_THERMISTOR)
       SCAN_THERMISTOR_TABLE(BEDTEMPTABLE, BEDTEMPTABLE_LEN);
     #elif ENABLED(HEATER_BED_USES_ADS1118)
-      return Ads1118::ADC_steps_to_C(raw);
+      return Ads1118::ADC_steps_to_C(raw/OVERSAMPLENR);
     #elif ENABLED(HEATER_BED_USES_AD595)
       return TEMP_AD595(raw);
     #elif ENABLED(HEATER_BED_USES_AD8495)
@@ -1023,7 +1023,7 @@ float Temperature::analog_to_celsius_hotend(const int raw, const uint8_t e) {
     #if ENABLED(HEATER_CHAMBER_USES_THERMISTOR)
       SCAN_THERMISTOR_TABLE(CHAMBERTEMPTABLE, CHAMBERTEMPTABLE_LEN);
     #elif ENABLED(HEATER_CHAMBER_USES_ADS1118)
-      return Ads1118::ADC_steps_to_C(raw);
+      return Ads1118::ADC_steps_to_C(raw/OVERSAMPLENR);
     #elif ENABLED(HEATER_CHAMBER_USES_AD595)
       return TEMP_AD595(raw);
     #elif ENABLED(HEATER_CHAMBER_USES_AD8495)
@@ -1707,35 +1707,35 @@ void Temperature::set_current_temp_raw() {
   #endif
 
   #if ENABLED(HEATER_0_USES_ADS1118)
-    current_temperature_raw[0] = ads1118.channel_raw(HEATER_0_CHANNEL);
+    current_temperature_raw[0] = ads1118.channel_raw(HEATER_0_CHANNEL)*OVERSAMPLENR;
   #endif
   #if ENABLED(HEATER_1_USES_ADS1118)
     #if ENABLED(TEMP_SENSOR_1_AS_REDUNDANT)
-      redundant_temperature_raw = ads1118.channel_raw(HEATER_1_CHANNEL);
+      redundant_temperature_raw = ads1118.channel_raw(HEATER_1_CHANNEL)*OVERSAMPLENR;
     #else
-      current_temperature_raw[1] = ads1118.channel_raw(HEATER_1_CHANNEL);
+      current_temperature_raw[1] = ads1118.channel_raw(HEATER_1_CHANNEL)*OVERSAMPLENR;
     #endif
   #endif
   #if ENABLED(HEATER_2_USES_ADS1118)
-    current_temperature_raw[2] = ads1118.channel_raw(HEATER_2_CHANNEL);
+    current_temperature_raw[2] = ads1118.channel_raw(HEATER_2_CHANNEL)*OVERSAMPLENR;
   #endif
   #if ENABLED(HEATER_3_USES_ADS1118)
-    current_temperature_raw[3] = ads1118.channel_raw(HEATER_3_CHANNEL);
+    current_temperature_raw[3] = ads1118.channel_raw(HEATER_3_CHANNEL)*OVERSAMPLENR;
   #endif
   #if ENABLED(HEATER_4_USES_ADS1118)
-    current_temperature_raw[4] = ads1118.channel_raw(HEATER_4_CHANNEL);
+    current_temperature_raw[4] = ads1118.channel_raw(HEATER_4_CHANNEL)*OVERSAMPLENR;
   #endif
 
   #if HAS_HEATED_BED
     #if ENABLED(HEATER_BED_USES_ADS1118)
-      current_temperature_bed_raw = ads1118.channel_raw(HEATER_BED_CHANNEL);
+      current_temperature_bed_raw = ads1118.channel_raw(HEATER_BED_CHANNEL)*OVERSAMPLENR;
     #else
       current_temperature_bed_raw = raw_temp_bed_value;
     #endif
   #endif
   #if HAS_TEMP_CHAMBER
     #if ENABLED(HEATER_CHAMBER_USES_ADS1118)
-      current_temperature_chamber_raw = ads1118.channel_raw(HEATER_CHAMBER_CHANNEL);
+      current_temperature_chamber_raw = ads1118.channel_raw(HEATER_CHAMBER_CHANNEL)*OVERSAMPLENR;
     #else
       current_temperature_chamber_raw = raw_temp_chamber_value;
     #endif

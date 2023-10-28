@@ -71,14 +71,20 @@ constexpr short Ads1118::ads1118_typek_table[21][2] PROGMEM;
 #define TRANSFERBIT(B,n,O) do{\
   WRITE(ADS1118_SCK_PIN, HIGH); \
   WRITE(ADS1118_DI_PIN, TEST(B,n)); \
+  DELAY_NS(100);\
   WRITE(ADS1118_SCK_PIN, LOW);\
-  if(READ(ADS1118_DO_PIN)) SBI(O,n);}while(0)
+  if(READ(ADS1118_DO_PIN)) SBI(O,n);\
+  DELAY_NS(100);\
+  }while(0)
 
 #define SENDBIT(B,n) do{\
   WRITE(ADS1118_SCK_PIN, HIGH); \
   WRITE(ADS1118_DI_PIN, TEST(B,n)); \
+  DELAY_NS(100);\
   WRITE(ADS1118_SCK_PIN, LOW); \
-  READ(ADS1118_DO_PIN);}while(0)
+  READ(ADS1118_DO_PIN);\
+  DELAY_NS(100);\
+  }while(0)
 
 #define ADS1118_SEND(M,L) do{\
   SENDBIT(M,7); \
@@ -107,6 +113,7 @@ constexpr short Ads1118::ads1118_typek_table[21][2] PROGMEM;
   TRANSFERBIT(M,2,O); \
   TRANSFERBIT(M,1,O); \
   TRANSFERBIT(M,0,O); \
+  O <<= 8; \
   TRANSFERBIT(L,7,O); \
   TRANSFERBIT(L,6,O); \
   TRANSFERBIT(L,5,O); \
@@ -153,14 +160,14 @@ uint8_t Ads1118::update()
 {
   // Select to read
   WRITE(ADS1118_CS, LOW);
-  // SERIAL_ECHOLN("Up");
-  // DELAY_NS(100);       // Ensure 100ns delay
+  SERIAL_ECHOLN("Up");
+  DELAY_NS(100);       // Ensure 100ns delay
 
   // check that data ready flag is low
   // if it is high, return 1 so the calling function knows to try again later
-  if (READ(ADS1118_DO_PIN) == HIGH) {
-    // SERIAL_ECHOLN("NR");
-    WRITE(ADS1118_CS, HIGH);
+  if (READ(ADS1118_DO_PIN)) {
+    SERIAL_ECHOLN("NR");
+    // WRITE(ADS1118_CS, HIGH);
     return 1;
   }
 
