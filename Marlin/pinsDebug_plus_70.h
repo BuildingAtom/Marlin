@@ -323,6 +323,12 @@ const uint8_t PROGMEM digital_pin_to_timer_PGM_plus_70[] = {
   NOT_ON_TIMER  , // PJ 6 ** 77 **
   NOT_ON_TIMER  , // PE 2 ** 78 **
   NOT_ON_TIMER  , // PE 6 ** 79 **
+  NOT_ON_TIMER  , // PE 7 ** 80 **
+  NOT_ON_TIMER  , // PD 4 ** 81 **
+  NOT_ON_TIMER  , // PD 5 ** 82 **
+  NOT_ON_TIMER  , // PD 6 ** 83 **
+  NOT_ON_TIMER  , // PH 2 ** 84 **
+  NOT_ON_TIMER  , // PH 7 ** 85 **
 };
 
 #define digitalPinToTimer_plus_70(P) ( pgm_read_byte( digital_pin_to_timer_PGM_plus_70 + (P) ) )

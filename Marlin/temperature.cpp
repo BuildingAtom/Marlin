@@ -2257,7 +2257,7 @@ void Temperature::isr() {
       // If we have the ADS1118, update every other MIN_ADC_ISR_LOOPS (10), which will request at 97.6Hz/2
       // We'll only take the last measurement during the readings_ready stage.
       #if ENABLED(TEMP_ADS1118)
-        if (temp_count % 2) ads1118.update();
+        if ((temp_count % 3) == 0) ads1118.update();
         // ads1118.update();
       #endif
       break;

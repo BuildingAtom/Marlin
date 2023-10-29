@@ -32,7 +32,7 @@
 #if ENABLED(TEMP_ADS1118)
 
 // Make some register maps
-// #include "softspi.h"
+#include "softspi.h"
 
 // MSB registers
 #define ADS1118_START_SS        0B10000000      // Start a single shot conversion
@@ -76,43 +76,43 @@
 class Ads1118 {
 private:
     static int16_t reference_compensation;
-    // static const uint8_t common_msb = ADS1118_START_SS | ADS1118_PGA_0_256 | ADS1118_MODE_SS;
-    static const uint8_t common_msb = ADS1118_PGA_0_256;
+    // #define common_msb (ADS1118_START_SS | ADS1118_PGA_0_256 | ADS1118_MODE_SS)
+    #define common_msb ADS1118_PGA_0_256
     #if ADS1118_CHANNEL(0)
         static int16_t channel_0_reading;
-        static const uint8_t channel_0_config_msb = common_msb | ADS1118_MUX_SEL_0;
+        #define channel_0_config_msb (common_msb | ADS1118_MUX_SEL_0)
     #endif
     #if ADS1118_CHANNEL(1)
         static int16_t channel_1_reading;
-        static const uint8_t channel_1_config_msb = common_msb | ADS1118_MUX_SEL_1;
+        #define channel_1_config_msb (common_msb | ADS1118_MUX_SEL_1)
     #endif
     #if ADS1118_CHANNEL(2)
         static int16_t channel_2_reading;
-        static const uint8_t channel_2_config_msb = common_msb | ADS1118_MUX_SEL_2;
+        #define channel_2_config_msb (common_msb | ADS1118_MUX_SEL_2)
     #endif
     #if ADS1118_CHANNEL(3)
         static int16_t channel_3_reading;
-        static const uint8_t channel_3_config_msb = common_msb | ADS1118_MUX_SEL_3;
+        #define channel_3_config_msb (common_msb | ADS1118_MUX_SEL_3)
     #endif
     #if ADS1118_CHANNEL(4)
         static int16_t channel_4_reading;
-        static const uint8_t channel_4_config_msb = common_msb | ADS1118_MUX_SEL_4;
+        #define channel_4_config_msb (common_msb | ADS1118_MUX_SEL_4)
     #endif
     #if ADS1118_CHANNEL(5)
         static int16_t channel_5_reading;
-        static const uint8_t channel_5_config_msb = common_msb | ADS1118_MUX_SEL_5;
+        #define channel_5_config_msb (common_msb | ADS1118_MUX_SEL_5)
     #endif
     #if ADS1118_CHANNEL(6)
         static int16_t channel_6_reading;
-        static const uint8_t channel_6_config_msb = common_msb | ADS1118_MUX_SEL_6;
+        #define channel_6_config_msb (common_msb | ADS1118_MUX_SEL_6)
     #endif
     #if ADS1118_CHANNEL(7)
         static int16_t channel_7_reading;
-        static const uint8_t channel_7_config_msb = common_msb | ADS1118_MUX_SEL_7;
+        #define channel_7_config_msb (common_msb | ADS1118_MUX_SEL_7)
     #endif
     // softspi doesn't enable pullup, so we want the ADS1118 to do so instead
-    static const uint8_t common_config_lsb = ADS1118_DR_64_SPS | ADS1118_WRITE_FLAG | ADS1118_MISO_PULLUP;
-    static const uint8_t reference_config_lsb = ADS1118_TS_MODE | ADS1118_DR_64_SPS | ADS1118_WRITE_FLAG | ADS1118_MISO_PULLUP;
+    #define common_config_lsb (ADS1118_DR_64_SPS | ADS1118_WRITE_FLAG | ADS1118_MISO_PULLUP)
+    #define reference_config_lsb (ADS1118_TS_MODE | ADS1118_DR_64_SPS | ADS1118_WRITE_FLAG | ADS1118_MISO_PULLUP)
     static uint8_t config_state;
     static uint8_t read_state;
     static uint8_t temp_check_counter;
@@ -142,7 +142,7 @@ private:
         { ADS1118_mV_TO_STEP(16.3970), 400 },
     };
     static short C_to_ADC_steps(int16_t C_reading);
-    // For softspi, we want the output to be low, and clock to be low, so we need lsb 1 to be true
+    // For softspi, we want mode 1
     // static SoftSPI<ADS1118_DO_PIN, ADS1118_DI_PIN, ADS1118_SCK_PIN, 1> ads1118_spi;
 public:
     void init();

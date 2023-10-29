@@ -68,16 +68,16 @@ uint8_t Ads1118::config_state = 0;
 uint8_t Ads1118::temp_check_counter = 0;
 constexpr short Ads1118::ads1118_typek_table[22][2] PROGMEM;
 
-#define TRANSFERBIT(B,n,O) do{\
-  WRITE(ADS1118_SCK_PIN, HIGH); \
+#define TRANSFERBIT(B,n,O,m) do{\
   WRITE(ADS1118_DI_PIN, TEST(B,n)); \
+  WRITE(ADS1118_SCK_PIN, HIGH); \
   WRITE(ADS1118_SCK_PIN, LOW);\
-  if(READ(ADS1118_DO_PIN)) SBI(O,n);\
+  if(READ(ADS1118_DO_PIN)) SBI(O,m);\
   }while(0)
 
 #define SENDBIT(B,n) do{\
-  WRITE(ADS1118_SCK_PIN, HIGH); \
   WRITE(ADS1118_DI_PIN, TEST(B,n)); \
+  WRITE(ADS1118_SCK_PIN, HIGH); \
   WRITE(ADS1118_SCK_PIN, LOW); \
   READ(ADS1118_DO_PIN);\
   }while(0)
@@ -98,26 +98,29 @@ constexpr short Ads1118::ads1118_typek_table[22][2] PROGMEM;
   SENDBIT(L,3); \
   SENDBIT(L,2); \
   SENDBIT(L,1); \
-  SENDBIT(L,0);}while(0)
+  SENDBIT(L,0); \
+  WRITE(ADS1118_DI_PIN, LOW); \
+  }while(0)
 
-#define ADS1118_TRANSFER(M,L,O) do{\
-  TRANSFERBIT(M,7,O); \
-  TRANSFERBIT(M,6,O); \
-  TRANSFERBIT(M,5,O); \
-  TRANSFERBIT(M,4,O); \
-  TRANSFERBIT(M,3,O); \
-  TRANSFERBIT(M,2,O); \
-  TRANSFERBIT(M,1,O); \
-  TRANSFERBIT(M,0,O); \
-  O <<= 8; \
-  TRANSFERBIT(L,7,O); \
-  TRANSFERBIT(L,6,O); \
-  TRANSFERBIT(L,5,O); \
-  TRANSFERBIT(L,4,O); \
-  TRANSFERBIT(L,3,O); \
-  TRANSFERBIT(L,2,O); \
-  TRANSFERBIT(L,1,O); \
-  TRANSFERBIT(L,0,O);}while(0)
+#define ADS1118_TRANSFER(M,L,O) do{ \
+  TRANSFERBIT(M,7,O,15); \
+  TRANSFERBIT(M,6,O,14); \
+  TRANSFERBIT(M,5,O,13); \
+  TRANSFERBIT(M,4,O,12); \
+  TRANSFERBIT(M,3,O,11); \
+  TRANSFERBIT(M,2,O,10); \
+  TRANSFERBIT(M,1,O,9); \
+  TRANSFERBIT(M,0,O,8); \
+  TRANSFERBIT(L,7,O,7); \
+  TRANSFERBIT(L,6,O,6); \
+  TRANSFERBIT(L,5,O,5); \
+  TRANSFERBIT(L,4,O,4); \
+  TRANSFERBIT(L,3,O,3); \
+  TRANSFERBIT(L,2,O,2); \
+  TRANSFERBIT(L,1,O,1); \
+  TRANSFERBIT(L,0,O,0); \
+  WRITE(ADS1118_DI_PIN, LOW); \
+  }while(0)
 
 void Ads1118::init()
 {
@@ -137,6 +140,8 @@ void Ads1118::init()
 
   SERIAL_ECHOLN("Initializing ADS1118");
   SERIAL_ECHOLNPAIR("ADS1118 unplugged reading: ", (int16_t)ADS1118_UNPLUGGED_BITS);
+  SERIAL_ECHOLNPAIR("ADS1118 CH0 config: ", channel_0_config_msb);
+  // SERIAL_ECHOLNPAIR("ADS1118 CH3 config: ", channel_3_config_msb);
 
   // Start the first update
   ADS1118_SEND(common_msb, reference_config_lsb);
@@ -149,14 +154,14 @@ void Ads1118::init()
   config_state = 0xFF;
 
   // Done with this chip (so we can do 16 bit transmissions)
-  DELAY_NS(100);       // Ensure 100ns delay
+  // DELAY_NS(100);       // Ensure 100ns delay
   // WRITE(ADS1118_CS, HIGH);
 }
 
 uint8_t Ads1118::update()
 {
   // Select to read
-  // SERIAL_ECHOLN("Up");
+  // // SERIAL_ECHOLN("Up");
   // WRITE(ADS1118_CS, LOW);
   // DELAY_NS(100);       // Ensure 100ns delay
 
@@ -164,7 +169,7 @@ uint8_t Ads1118::update()
   // if it is high, return 1 so the calling function knows to try again later
   if (READ(ADS1118_DO_PIN)) {
     // WRITE(ADS1118_CS, HIGH);
-    SERIAL_ECHOLN("NR");
+    // SERIAL_ECHOLN("NR");
     return 1;
   }
 
@@ -172,6 +177,7 @@ uint8_t Ads1118::update()
   // uint8_t config_lsb = common_config_lsb;
   uint8_t last_read_state = read_state;
   int16_t raw = 0;
+  uint16_t config = 0;
 
   // Macro to make the following expansion less repetitive
   // #define ADS1118_CONFIG_AND_READ(C)                            \
@@ -185,9 +191,11 @@ uint8_t Ads1118::update()
   //   temp_check_counter++;
   #define ADS1118_CONFIG_AND_READ(C)                            \
     ADS1118_TRANSFER(channel_##C##_config_msb, common_config_lsb, raw);    \
-    ADS1118_SEND(channel_##C##_config_msb, common_config_lsb); \
+    ADS1118_TRANSFER(0, 0, config); \
     read_state = (uint8_t)(0x01 << C);                                   \
     temp_check_counter++;
+    // SERIAL_ECHOLNPAIR("sent ", channel_##C##_config_msb);  \
+    // SERIAL_ECHOLNPAIR("msb ", config>>8);  \
 
   // If we want to do a reference reading
   if (config_state == 0) {
@@ -200,10 +208,14 @@ uint8_t Ads1118::update()
     // ads1118_spi.transfer(config_msb);
     // ads1118_spi.transfer(config_lsb);
     ADS1118_TRANSFER(common_msb, reference_config_lsb, raw);
-    ADS1118_SEND(common_msb, reference_config_lsb);
+    ADS1118_TRANSFER(0, 0, config);
+    // SERIAL_ECHOLNPAIR("sent ", reference_config_lsb);
+    // SERIAL_ECHOLNPAIR("lsb ", config&0xFF);
     read_state = 0;
     // We can end early here as this is the 16-bit transmission approach
     config_state = 0xFF;
+    // Temporary to keep things from being too wacky
+    if (reference_config_lsb != config&0xFE) return 1;
   }
   #if ADS1118_CHANNEL(0)
     // We want to read channel 0
@@ -298,6 +310,7 @@ uint8_t Ads1118::update()
     // ERROR OUT HARD HERE
     SERIAL_ECHOLN("BC");
   }
+  // WRITE(ADS1118_CS, HIGH);
 
   // See if next time we're going to check the reference temperature
   if (temp_check_counter >= ADS1118_TS_CHECK_CYCLES) {
@@ -399,12 +412,11 @@ float Ads1118::ADC_steps_to_C(int16_t C_reading)
 
 int16_t Ads1118::channel_raw(uint8_t channel)
 {
-  SERIAL_ECHOLNPAIR("ch ", channel);
-  SERIAL_ECHOLNPAIR("ref ", reference_compensation);
+  // SERIAL_ECHOLNPAIR("ch ", channel);
   switch(channel){
     #if ADS1118_CHANNEL(0)
       case 0:
-        SERIAL_ECHOLNPAIR("raw ", channel_0_reading + reference_compensation);
+        // SERIAL_ECHOLNPAIR("raw ", channel_0_reading);
         return channel_0_reading + reference_compensation;
     #endif
     #if ADS1118_CHANNEL(1)
@@ -419,7 +431,7 @@ int16_t Ads1118::channel_raw(uint8_t channel)
     #endif
     #if ADS1118_CHANNEL(3)
       case 3:
-        SERIAL_ECHOLNPAIR("raw ", channel_3_reading + reference_compensation);
+        // SERIAL_ECHOLNPAIR("raw ", channel_3_reading);
         return channel_3_reading + reference_compensation;
     #endif
     #if ADS1118_CHANNEL(4)
