@@ -69,17 +69,20 @@ uint8_t Ads1118::temp_check_counter = 0;
 constexpr short Ads1118::ads1118_typek_table[22][2] PROGMEM;
 
 #define TRANSFERBIT(B,n,O,m) do{\
-  WRITE(ADS1118_DI_PIN, TEST(B,n)); \
   WRITE(ADS1118_SCK_PIN, HIGH); \
+  WRITE(ADS1118_DI_PIN, TEST(B,n)); \
+  DELAY_NS(50); \
   WRITE(ADS1118_SCK_PIN, LOW);\
+  DELAY_NS(50); \
   if(READ(ADS1118_DO_PIN)) SBI(O,m);\
   }while(0)
 
 #define SENDBIT(B,n) do{\
-  WRITE(ADS1118_DI_PIN, TEST(B,n)); \
   WRITE(ADS1118_SCK_PIN, HIGH); \
+  WRITE(ADS1118_DI_PIN, TEST(B,n)); \
+  DELAY_NS(50); \
   WRITE(ADS1118_SCK_PIN, LOW); \
-  READ(ADS1118_DO_PIN);\
+  DELAY_NS(100); \
   }while(0)
 
 #define ADS1118_SEND(M,L) do{\

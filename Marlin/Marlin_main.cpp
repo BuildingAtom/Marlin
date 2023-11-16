@@ -15339,7 +15339,8 @@ void setup() {
   #endif
 
   #if ENABLED(DIGIPOT_I2C)
-    digipot_i2c_init();
+    // THIS IS THE PROBLEM, CHECK THIS CODE
+    // digipot_i2c_init();
   #endif
 
   #if ENABLED(DAC_STEPPER_CURRENT)
